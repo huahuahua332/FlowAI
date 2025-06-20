@@ -180,6 +180,50 @@ app.use('/api/generate', generateLimiter);
 // 静态文件服务
 app.use(express.static('public'));
 
+// 健康检查端点
+app.get('/api/health', (req, res) => {
+  const healthStatus = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    uptime: process.uptime(),
+    database: getConnectionStatus()
+  };
+  
+  res.json(healthStatus);
+});
+
+// 详细系统状态端点
+app.get('/api/status', optionalAuth, async (req, res) => {
+  try {
+    const dbHealth = await healthCheck();
+    const systemStatus = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      database: dbHealth,
+      features: {
+        demoMode: isDemoMode(),
+        i18n: true,
+        rateLimit: true,
+        deviceFingerprint: true
+      }
+    };
+    
+    res.json(systemStatus);
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      message: 'System health check failed',
+      error: error.message
+    });
+  }
+});
+
 // OAuth 调试页面
 app.get('/oauth-debug', (req, res) => {
   res.sendFile(__dirname + '/public/oauth-debug.html');
@@ -218,15 +262,6 @@ app.get('/admin-test.html', (req, res) => {
 });
 
 
-
-// 简单状态检查
-app.get('/api/status', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
 
 // 健康检查
 app.get('/health', async (req, res) => {
@@ -280,7 +315,6 @@ app.get('/', (req, res) => {
       user: '/api/user',
       payment: '/api/payment',
       prompt: '/api/prompt',
-      status: '/api/status',
       health: '/health'
     },
     connection: connectionStatus
