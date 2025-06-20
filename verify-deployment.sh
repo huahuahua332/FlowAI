@@ -4,7 +4,7 @@
 # 使用方法: ./verify-deployment.sh [YOUR_APP_URL]
 
 # 默认URL，请替换为您的实际Sealos应用URL
-APP_URL=${1:-"https://your-app-url.sealos.run"}
+APP_URL=${1:-"https://lbszbktvnuvn.sealoshzh.site"}
 
 echo "🔍 开始验证 Sealos 部署状态..."
 echo "🌐 应用URL: $APP_URL"
