@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 处理中...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: #f5f5f5;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .success { color: #34a853; }
+        .error { color: #ea4335; }
+        .info { color: #4285f4; }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 OAuth 登录处理</h2>
+        <div class="spinner" id="spinner"></div>
+        <div class="status info" id="status">正在处理登录信息...</div>
+        <div id="result"></div>
+        <div id="actions" style="display: none;">
+            <a href="/" class="btn">继续到应用</a>
+            <a href="/login" class="btn">重新登录</a>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        console.log('OAuth回调页面开始加载');
+        
+        // 立即执行，避免等待DOM加载
+        (function() {
+            try {
+                console.log('开始处理OAuth回调');
+                
+                // 获取URL参数
+                var urlParams = new URLSearchParams(window.location.search);
+                var token = urlParams.get('token');
+                var error = urlParams.get('error');
+                var userParam = urlParams.get('user');
+                var success = urlParams.get('success');
+                
+                console.log('URL参数:', {
+                    token: token ? 'exists' : 'null',
+                    error: error,
+                    success: success,
+                    userParam: userParam ? 'exists' : 'null'
+                });
+                
+                var statusEl = document.getElementById('status');
+                var resultEl = document.getElementById('result');
+                var spinnerEl = document.getElementById('spinner');
+                var actionsEl = document.getElementById('actions');
+                
+                var user = null;
+                if (userParam) {
+                    try {
+                        user = JSON.parse(decodeURIComponent(userParam));
+                        console.log('用户信息解析成功');
+                    } catch (e) {
+                        console.error('用户信息解析失败:', e);
+                    }
+                }
+                
+                if (error || success === 'false') {
+                    // 处理错误
+                    console.log('OAuth登录失败:', error);
+                    spinnerEl.style.display = 'none';
+                    statusEl.textContent = 'OAuth 登录失败';
+                    statusEl.className = 'status error';
+                    resultEl.innerHTML = '<div class="error">❌ 错误: ' + (error || '未知错误') + '</div>';
+                    actionsEl.style.display = 'block';
+                    
+                    // 通知父窗口错误
+                    if (window.opener) {
+                        try {
+                            // 尝试多个可能的来源
+                            var origins = [
+                                'http://localhost:59334',
+                                'http://127.0.0.1:59334',
+                                'http://localhost:3000',
+                                window.location.origin
+                            ];
+                            
+                            origins.forEach(function(origin) {
+                                try {
+                                    window.opener.postMessage({
+                                        type: 'oauth-error',
+                                        error: error || '未知错误'
+                                    }, origin);
+                                } catch (e) {
+                                    // 忽略跨域错误
+                                }
+                            });
+                            
+                            console.log('已通知父窗口错误');
+                        } catch (e) {
+                            console.error('通知父窗口失败:', e);
+                        }
+                        
+                        setTimeout(function() {
+                            window.close();
+                        }, 3000);
+                    }
+                    
+                } else if (token && success === 'true') {
+                    // 成功获得token
+                    console.log('OAuth登录成功');
+                    spinnerEl.style.display = 'none';
+                    statusEl.textContent = 'OAuth 登录成功！';
+                    statusEl.className = 'status success';
+                    resultEl.innerHTML = '<div class="success">✅ 登录成功！正在保存认证信息...</div>';
+                    
+                    // 保存token
+                    try {
+                        localStorage.setItem('authToken', token);
+                        console.log('Token已保存到localStorage');
+                        
+                        if (user) {
+                            localStorage.setItem('userInfo', JSON.stringify(user));
+                            console.log('用户信息已保存');
+                        }
+                    } catch (e) {
+                        console.error('保存到localStorage失败:', e);
+                    }
+                    
+                    // 通知父窗口成功
+                    if (window.opener) {
+                        try {
+                            // 尝试多个可能的来源
+                            var origins = [
+                                'http://localhost:59334',
+                                'http://127.0.0.1:59334',
+                                'http://localhost:3000',
+                                window.location.origin
+                            ];
+                            
+                            origins.forEach(function(origin) {
+                                try {
+                                    window.opener.postMessage({
+                                        type: 'oauth-success',
+                                        token: token,
+                                        user: user,
+                                        success: true
+                                    }, origin);
+                                } catch (e) {
+                                    // 忽略跨域错误
+                                }
+                            });
+                            
+                            console.log('已通知父窗口成功');
+                        } catch (e) {
+                            console.error('通知父窗口失败:', e);
+                        }
+                        
+                        setTimeout(function() {
+                            window.close();
+                        }, 2000);
+                    } else {
+                        actionsEl.style.display = 'block';
+                    }
+                    
+                } else {
+                    // 无效参数
+                    console.log('无效的OAuth回调参数');
+                    spinnerEl.style.display = 'none';
+                    statusEl.textContent = '无效的回调';
+                    statusEl.className = 'status error';
+                    resultEl.innerHTML = '<div class="error">❌ 未找到有效的登录信息</div>';
+                    actionsEl.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('OAuth回调处理出错:', error);
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('status').textContent = 'JavaScript执行错误';
+                document.getElementById('status').className = 'status error';
+                document.getElementById('result').innerHTML = '<div class="error">❌ 处理错误: ' + error.message + '</div>';
+                document.getElementById('actions').style.display = 'block';
+            }
+        })();
+        
+        console.log('OAuth回调页面脚本加载完成');
+    </script>
+</body>
+</html> 

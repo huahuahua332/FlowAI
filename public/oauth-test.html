@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 测试 - VisualForge AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .config-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .oauth-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+        .oauth-button:hover {
+            background: #357ae8;
+        }
+        .direct-oauth {
+            background: #db4437;
+        }
+        .direct-oauth:hover {
+            background: #c23321;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OAuth 测试页面</h1>
+        
+        <div class="config-info">
+            <h3>📋 当前配置信息</h3>
+            <p><strong>Client ID:</strong> <code>1003903920498-8v900k6gcd6nbtmkn8n0u105b5gposk8.apps.googleusercontent.com</code></p>
+            <p><strong>回调地址:</strong> <code>https://lbszbktvnuvn.sealoshzh.site/api/auth/google/callback</code></p>
+            <p><strong>前端地址:</strong> <code>https://lbszbktvnuvn.sealoshzh.site</code></p>
+            <p><strong>权限范围:</strong> <code>openid email profile</code></p>
+        </div>
+
+        <h3>🧪 测试方式</h3>
+        
+        <!-- 后端路由测试 -->
+        <a href="/api/auth/google" class="oauth-button">
+            📱 测试后端OAuth路由 (/api/auth/google)
+        </a>
+        
+        <!-- 直接Google OAuth测试 -->
+        <a href="#" id="directOAuth" class="oauth-button direct-oauth">
+            🔗 测试直接Google OAuth (前端方式)
+        </a>
+
+        <div class="status" id="status">
+            <h4>📊 测试状态</h4>
+            <p>点击上方按钮开始测试OAuth流程</p>
+        </div>
+
+        <div class="config-info">
+            <h3>📝 测试说明</h3>
+            <ul>
+                <li><strong>后端路由测试:</strong> 使用Passport.js处理的传统OAuth流程</li>
+                <li><strong>直接OAuth测试:</strong> 使用前端构建的完整OAuth URL</li>
+                <li><strong>成功标志:</strong> 成功后应重定向到前端主页</li>
+                <li><strong>错误处理:</strong> 错误时会重定向到登录页面并显示错误信息</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 直接Google OAuth测试
+        document.getElementById('directOAuth').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const GOOGLE_CLIENT_ID = '1003903920498-8v900k6gcd6nbtmkn8n0u105b5gposk8.apps.googleusercontent.com';
+            const GOOGLE_REDIRECT_URI = 'https://lbszbktvnuvn.sealoshzh.site/api/auth/google/callback';
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
+                `redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&` +
+                `scope=${encodeURIComponent('openid email profile')}&` +
+                `response_type=code&` +
+                `access_type=offline&` +
+                `prompt=consent`;
+            
+            document.getElementById('status').innerHTML = `
+                <h4>🚀 正在测试直接OAuth</h4>
+                <p>构建的OAuth URL:</p>
+                <code style="word-break: break-all; display: block; padding: 10px; margin: 10px 0;">${authUrl}</code>
+                <p>正在跳转到Google认证页面...</p>
+            `;
+            
+            // 跳转到Google OAuth
+            window.location.href = authUrl;
+        });
+
+        // 检查URL参数以显示结果
+        const urlParams = new URLSearchParams(window.location.search);
+        const authResult = urlParams.get('auth');
+        const error = urlParams.get('error');
+        const token = urlParams.get('token');
+
+        if (authResult === 'success') {
+            document.getElementById('status').innerHTML = `
+                <h4>✅ OAuth 认证成功!</h4>
+                <p>已成功完成Google OAuth认证流程</p>
+                ${token ? `<p><strong>Token:</strong> <code>${token.substring(0, 20)}...</code></p>` : ''}
+            `;
+        } else if (error) {
+            document.getElementById('status').innerHTML = `
+                <h4>❌ OAuth 认证失败</h4>
+                <p><strong>错误:</strong> ${error}</p>
+                <p>请检查配置或重试</p>
+            `;
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 流程调试 - VisualForge AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .oauth-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            margin: 10px 0;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .oauth-button:hover {
+            background: #357ae8;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .success {
+            background: #28a745;
+        }
+        .success:hover {
+            background: #218838;
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .url-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: rgba(40, 167, 69, 0.3);
+        }
+        .status.error {
+            background: rgba(220, 53, 69, 0.3);
+        }
+        .status.info {
+            background: rgba(23, 162, 184, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OAuth 流程完整调试</h1>
+        
+        <div class="test-section">
+            <h3>📋 当前配置</h3>
+            <div class="url-display">
+                <strong>Client ID:</strong> 1003903920498-8v900k6gcd6nbtmkn8n0u105b5gposk8.apps.googleusercontent.com<br>
+                <strong>回调地址:</strong> https://lbszbktvnuvn.sealoshzh.site/api/auth/google/callback<br>
+                <strong>权限范围:</strong> openid email profile<br>
+                <strong>当前域名:</strong> <span id="currentDomain"></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 OAuth 测试方法</h3>
+            
+            <!-- 方法1: 后端路由 -->
+            <button onclick="testBackendRoute()" class="oauth-button">
+                📱 方法1: 测试后端OAuth路由
+            </button>
+            
+            <!-- 方法2: 直接Google URL -->
+            <button onclick="testDirectGoogle()" class="oauth-button success">
+                🔗 方法2: 直接Google OAuth URL
+            </button>
+            
+            <!-- 方法3: 新窗口测试 -->
+            <button onclick="testNewWindow()" class="oauth-button">
+                🪟 方法3: 新窗口测试
+            </button>
+            
+            <!-- 危险测试: 直接访问回调 -->
+            <button onclick="testCallbackDirect()" class="oauth-button danger">
+                ⚠️ 危险测试: 直接访问回调URL (会出错)
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 测试日志</h3>
+            <div id="log" class="log">
+                点击上方按钮开始测试...<br>
+            </div>
+            <button onclick="clearLog()" class="oauth-button" style="background: #6c757d;">
+                🗑️ 清空日志
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 URL 分析</h3>
+            <div id="urlAnalysis" class="log">
+                等待生成OAuth URL...
+            </div>
+        </div>
+
+        <div id="status" class="status info">
+            <h4>📈 当前状态</h4>
+            <p>准备开始OAuth测试。请选择上方的测试方法。</p>
+        </div>
+    </div>
+
+    <script>
+        // 显示当前域名
+        document.getElementById('currentDomain').textContent = window.location.origin;
+
+        // 日志函数
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '日志已清空<br>';
+        }
+
+        function setStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status');
+            statusElement.className = `status ${type}`;
+            statusElement.innerHTML = `<h4>📈 ${type === 'success' ? '成功' : type === 'error' ? '错误' : '状态'}</h4><p>${message}</p>`;
+        }
+
+        // 生成并分析OAuth URL
+        function generateOAuthURL() {
+            const GOOGLE_CLIENT_ID = '1003903920498-8v900k6gcd6nbtmkn8n0u105b5gposk8.apps.googleusercontent.com';
+            const GOOGLE_REDIRECT_URI = 'https://lbszbktvnuvn.sealoshzh.site/api/auth/google/callback';
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
+                `redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&` +
+                `scope=${encodeURIComponent('openid email profile')}&` +
+                `response_type=code&` +
+                `access_type=offline&` +
+                `prompt=consent`;
+            
+            // 显示URL分析
+            document.getElementById('urlAnalysis').innerHTML = `
+                <strong>生成的OAuth URL:</strong><br>
+                ${authUrl}<br><br>
+                <strong>参数分析:</strong><br>
+                • client_id: ${GOOGLE_CLIENT_ID}<br>
+                • redirect_uri: ${GOOGLE_REDIRECT_URI}<br>
+                • scope: openid email profile<br>
+                • response_type: code<br>
+                • access_type: offline<br>
+                • prompt: consent
+            `;
+            
+            return authUrl;
+        }
+
+        // 测试方法1: 后端路由
+        function testBackendRoute() {
+            log('🚀 开始测试后端OAuth路由');
+            setStatus('正在测试后端OAuth路由...', 'info');
+            
+            const backendUrl = 'https://lbszbktvnuvn.sealoshzh.site/api/auth/google';
+            log(`访问后端路由: ${backendUrl}`);
+            
+            window.location.href = backendUrl;
+        }
+
+        // 测试方法2: 直接Google OAuth
+        function testDirectGoogle() {
+            log('🔗 开始测试直接Google OAuth');
+            setStatus('正在生成直接OAuth URL...', 'info');
+            
+            const authUrl = generateOAuthURL();
+            log(`生成的OAuth URL: ${authUrl.substring(0, 100)}...`);
+            log('正在跳转到Google认证页面...');
+            
+            window.location.href = authUrl;
+        }
+
+        // 测试方法3: 新窗口
+        function testNewWindow() {
+            log('🪟 开始新窗口测试');
+            setStatus('正在新窗口中打开OAuth...', 'info');
+            
+            const authUrl = generateOAuthURL();
+            const newWindow = window.open(authUrl, 'oauth', 'width=600,height=700');
+            
+            log('已在新窗口中打开OAuth认证');
+            log('请在新窗口中完成认证，然后查看结果');
+            
+            // 监听新窗口关闭
+            const checkClosed = setInterval(() => {
+                if (newWindow.closed) {
+                    clearInterval(checkClosed);
+                    log('新窗口已关闭');
+                    setStatus('新窗口已关闭，请检查认证结果', 'info');
+                }
+            }, 1000);
+        }
+
+        // 危险测试: 直接访问回调
+        function testCallbackDirect() {
+            log('⚠️ 危险测试: 直接访问回调URL');
+            setStatus('警告：这将导致错误，仅用于验证错误处理', 'error');
+            
+            const callbackUrl = 'https://lbszbktvnuvn.sealoshzh.site/api/auth/google/callback';
+            log(`直接访问: ${callbackUrl}`);
+            log('预期结果: 应该显示 "Missing required parameter: scope" 错误');
+            
+            window.open(callbackUrl, '_blank');
+        }
+
+        // 检查URL参数
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const authResult = urlParams.get('auth');
+            const error = urlParams.get('error');
+            const token = urlParams.get('token');
+            const code = urlParams.get('code');
+
+            if (authResult === 'success') {
+                log('✅ OAuth认证成功！');
+                setStatus('OAuth认证成功完成！', 'success');
+                if (token) {
+                    log(`获得Token: ${token.substring(0, 20)}...`);
+                }
+            } else if (error) {
+                log(`❌ OAuth认证失败: ${error}`);
+                setStatus(`OAuth认证失败: ${error}`, 'error');
+            } else if (code) {
+                log(`📝 获得授权码: ${code.substring(0, 20)}...`);
+                setStatus('获得授权码，等待后端处理...', 'info');
+            }
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            log('页面加载完成');
+            generateOAuthURL();
+            checkUrlParams();
+        });
+    </script>
+</body>
+</html> 

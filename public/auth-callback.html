@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 登录处理中...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .loading {
+            font-size: 18px;
+            color: #666;
+            margin: 20px 0;
+        }
+        .success {
+            color: #34a853;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .error {
+            color: #ea4335;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .token-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        .btn {
+            background: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #3367d6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 OAuth 登录处理</h2>
+        <div class="spinner" id="spinner"></div>
+        <div class="loading" id="status">正在处理登录信息...</div>
+        <div id="result"></div>
+        <div id="token-info"></div>
+        <div id="actions" style="display: none;">
+            <button class="btn" onclick="continueToApp()">继续到应用</button>
+            <button class="btn" onclick="tryAgain()">重新登录</button>
+        </div>
+    </div>
+
+    <script>
+        // 立即执行
+        (function() {
+            console.log('OAuth回调页面加载');
+            
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
+            const userParam = urlParams.get('user');
+            const success = urlParams.get('success');
+            
+            console.log('URL参数:', { token, error, userParam, success });
+            
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            const spinnerEl = document.getElementById('spinner');
+            const tokenInfoEl = document.getElementById('token-info');
+            const actionsEl = document.getElementById('actions');
+            
+            let user = null;
+            if (userParam) {
+                try {
+                    user = JSON.parse(decodeURIComponent(userParam));
+                    console.log('解析用户信息:', user);
+                } catch (e) {
+                    console.error('解析用户信息失败:', e);
+                }
+            }
+            
+            if (error || success === 'false') {
+                // 处理错误
+                spinnerEl.style.display = 'none';
+                statusEl.textContent = 'OAuth 登录失败';
+                resultEl.innerHTML = `<div class="error">❌ 错误: ${error || '未知错误'}</div>`;
+                actionsEl.style.display = 'block';
+                
+                // 如果是弹窗，通知父窗口错误
+                if (window.opener) {
+                    window.opener.postMessage({ 
+                        type: 'oauth-error', 
+                        error: error || '未知错误'
+                    }, window.location.origin);
+                    
+                    setTimeout(() => {
+                        window.close();
+                    }, 3000);
+                }
+                
+            } else if (token && success === 'true') {
+                // 成功获得token
+                spinnerEl.style.display = 'none';
+                statusEl.textContent = 'OAuth 登录成功！';
+                resultEl.innerHTML = '<div class="success">✅ 登录成功！正在保存认证信息...</div>';
+                
+                // 保存token
+                localStorage.setItem('authToken', token);
+                
+                // 显示token和用户信息
+                const shortToken = token.length > 50 ? token.substring(0, 50) + '...' : token;
+                let tokenInfo = `<div class="token-info">Token: ${shortToken}</div>`;
+                
+                if (user) {
+                    tokenInfo += `<div class="token-info">用户: ${user.name} (${user.email})</div>`;
+                }
+                tokenInfoEl.innerHTML = tokenInfo;
+                
+                // 如果是弹窗，通知父窗口
+                if (window.opener) {
+                    console.log('通知父窗口登录成功');
+                    window.opener.postMessage({ 
+                        type: 'oauth-success', 
+                        token: token,
+                        user: user,
+                        success: true
+                    }, window.location.origin);
+                    
+                    // 延迟关闭弹窗
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                } else {
+                    // 显示继续按钮
+                    actionsEl.style.display = 'block';
+                }
+                
+            } else {
+                // 没有有效参数
+                spinnerEl.style.display = 'none';
+                statusEl.textContent = '无效的回调';
+                resultEl.innerHTML = '<div class="error">❌ 未找到有效的登录信息</div>';
+                actionsEl.style.display = 'block';
+                
+                console.error('无效的回调参数:', { token, error, success, userParam });
+            }
+        })();
+        
+        function continueToApp() {
+            // 重定向到主应用页面
+            window.location.href = '/';
+        }
+        
+        function tryAgain() {
+            // 重新开始OAuth流程
+            window.location.href = '/api/auth/google';
+        }
+        
+        // 监听来自弹窗的消息
+        window.addEventListener('message', function(event) {
+            console.log('收到消息:', event.data);
+        });
+    </script>
+</body>
+</html> 

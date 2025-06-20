@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统功能测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+        
+        .section h2 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        .button.secondary {
+            background: #6b7280;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        
+        .code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .card h3 {
+            color: #374151;
+            margin-bottom: 15px;
+        }
+        
+        .login-form {
+            display: grid;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .form-input {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 后台管理系统功能测试</h1>
+            <p>测试后台管理系统的各项功能</p>
+        </div>
+        
+        <div class="content">
+            <!-- 登录测试 -->
+            <div class="section">
+                <h2>🔐 管理员登录测试</h2>
+                <div class="card">
+                    <h3>登录信息</h3>
+                    <div class="login-form">
+                        <input type="email" id="adminEmail" class="form-input" value="admin@visualforge.com" placeholder="管理员邮箱">
+                        <input type="password" id="adminPassword" class="form-input" value="admin123456" placeholder="管理员密码">
+                        <button class="button" onclick="testLogin()">🔐 测试登录</button>
+                        <button class="button secondary" onclick="testWrongLogin()">❌ 测试错误登录</button>
+                    </div>
+                    <div id="loginStatus" class="status info">等待测试...</div>
+                </div>
+            </div>
+            
+            <!-- 功能测试 -->
+            <div class="section">
+                <h2>📊 功能测试</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>仪表板测试</h3>
+                        <button class="button" onclick="testDashboard()">📊 测试仪表板</button>
+                        <div id="dashboardResult" class="code">等待测试...</div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>用户管理测试</h3>
+                        <button class="button" onclick="testUsers()">👥 测试用户列表</button>
+                        <button class="button" onclick="testUserSearch()">🔍 测试用户搜索</button>
+                        <div id="usersResult" class="code">等待测试...</div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>视频管理测试</h3>
+                        <button class="button" onclick="testVideos()">🎬 测试视频列表</button>
+                        <button class="button" onclick="testVideoFilter()">📂 测试视频筛选</button>
+                        <div id="videosResult" class="code">等待测试...</div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>权限测试</h3>
+                        <button class="button" onclick="testAuth()">🔒 测试权限验证</button>
+                        <div id="authResult" class="code">等待测试...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 页面访问测试 -->
+            <div class="section">
+                <h2>🌐 页面访问测试</h2>
+                <div class="card">
+                    <h3>管理页面</h3>
+                    <button class="button" onclick="openAdminLogin()">🔗 打开登录页面</button>
+                    <button class="button" onclick="openAdminPanel()">🔗 打开管理面板</button>
+                    <div class="status info">
+                        <strong>默认管理员账号:</strong><br>
+                        邮箱: admin@visualforge.com<br>
+                        密码: admin123456
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 测试结果 -->
+            <div class="section">
+                <h2>📋 测试结果</h2>
+                <div id="testResults" class="code">等待开始测试...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = null;
+        const testResults = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: '#60a5fa',
+                success: '#34d399',
+                error: '#f87171',
+                warning: '#fbbf24'
+            };
+            
+            const resultDiv = document.getElementById('testResults');
+            resultDiv.innerHTML += `<span style="color: ${colors[type] || '#f9fafb'};">[${timestamp}] ${message}</span>\n`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+        
+        async function apiRequest(endpoint, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (adminToken) {
+                defaultOptions.headers.Authorization = `Bearer ${adminToken}`;
+            }
+            
+            const response = await fetch(`/api/admin${endpoint}`, {
+                ...defaultOptions,
+                ...options,
+                headers: { ...defaultOptions.headers, ...options.headers }
+            });
+            
+            return await response.json();
+        }
+        
+        async function testLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const statusDiv = document.getElementById('loginStatus');
+            
+            try {
+                log('开始测试管理员登录...', 'info');
+                const data = await apiRequest('/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (data.success) {
+                    adminToken = data.data.token;
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = `✅ 登录成功! Token: ${adminToken.substring(0, 20)}...`;
+                    log('管理员登录成功', 'success');
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `❌ 登录失败: ${data.message}`;
+                    log(`登录失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ 登录错误: ${error.message}`;
+                log(`登录错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testWrongLogin() {
+            const statusDiv = document.getElementById('loginStatus');
+            
+            try {
+                log('测试错误密码登录...', 'info');
+                const data = await apiRequest('/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        email: 'admin@visualforge.com', 
+                        password: 'wrongpassword' 
+                    })
+                });
+                
+                if (!data.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = `✅ 错误密码测试通过: ${data.message}`;
+                    log('错误密码验证正常', 'success');
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `❌ 安全漏洞: 错误密码竟然登录成功!`;
+                    log('安全漏洞: 错误密码登录成功', 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ 测试错误: ${error.message}`;
+                log(`测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDashboard() {
+            if (!adminToken) {
+                alert('请先登录!');
+                return;
+            }
+            
+            try {
+                log('测试仪表板数据获取...', 'info');
+                const data = await apiRequest('/dashboard');
+                
+                if (data.success) {
+                    const result = `✅ 仪表板数据获取成功:
+用户总数: ${data.data.overview.totalUsers}
+视频总数: ${data.data.overview.totalVideos}
+今日新增用户: ${data.data.overview.todayUsers}
+今日生成视频: ${data.data.overview.todayVideos}`;
+                    
+                    document.getElementById('dashboardResult').textContent = result;
+                    log('仪表板测试通过', 'success');
+                } else {
+                    document.getElementById('dashboardResult').textContent = `❌ 失败: ${data.message}`;
+                    log(`仪表板测试失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('dashboardResult').textContent = `❌ 错误: ${error.message}`;
+                log(`仪表板测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUsers() {
+            if (!adminToken) {
+                alert('请先登录!');
+                return;
+            }
+            
+            try {
+                log('测试用户列表获取...', 'info');
+                const data = await apiRequest('/users?page=1&limit=5');
+                
+                if (data.success) {
+                    const result = `✅ 用户列表获取成功:
+返回用户数: ${data.data.users.length}
+总用户数: ${data.data.pagination.count}
+第一个用户: ${data.data.users[0]?.name || '无'}`;
+                    
+                    document.getElementById('usersResult').textContent = result;
+                    log('用户列表测试通过', 'success');
+                } else {
+                    document.getElementById('usersResult').textContent = `❌ 失败: ${data.message}`;
+                    log(`用户列表测试失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('usersResult').textContent = `❌ 错误: ${error.message}`;
+                log(`用户列表测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUserSearch() {
+            if (!adminToken) {
+                alert('请先登录!');
+                return;
+            }
+            
+            try {
+                log('测试用户搜索功能...', 'info');
+                const data = await apiRequest('/users?search=张');
+                
+                if (data.success) {
+                    const result = `✅ 用户搜索成功:
+搜索关键词: "张"
+搜索结果: ${data.data.users.length} 个用户`;
+                    
+                    document.getElementById('usersResult').textContent = result;
+                    log('用户搜索测试通过', 'success');
+                } else {
+                    document.getElementById('usersResult').textContent = `❌ 失败: ${data.message}`;
+                    log(`用户搜索测试失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('usersResult').textContent = `❌ 错误: ${error.message}`;
+                log(`用户搜索测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testVideos() {
+            if (!adminToken) {
+                alert('请先登录!');
+                return;
+            }
+            
+            try {
+                log('测试视频列表获取...', 'info');
+                const data = await apiRequest('/videos?page=1&limit=5');
+                
+                if (data.success) {
+                    const result = `✅ 视频列表获取成功:
+返回视频数: ${data.data.videos.length}
+总视频数: ${data.data.pagination.count}
+第一个视频: ${data.data.videos[0]?.title || '无'}`;
+                    
+                    document.getElementById('videosResult').textContent = result;
+                    log('视频列表测试通过', 'success');
+                } else {
+                    document.getElementById('videosResult').textContent = `❌ 失败: ${data.message}`;
+                    log(`视频列表测试失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('videosResult').textContent = `❌ 错误: ${error.message}`;
+                log(`视频列表测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testVideoFilter() {
+            if (!adminToken) {
+                alert('请先登录!');
+                return;
+            }
+            
+            try {
+                log('测试视频状态筛选...', 'info');
+                const data = await apiRequest('/videos?status=completed');
+                
+                if (data.success) {
+                    const result = `✅ 视频筛选成功:
+筛选条件: 已完成
+筛选结果: ${data.data.videos.length} 个视频`;
+                    
+                    document.getElementById('videosResult').textContent = result;
+                    log('视频筛选测试通过', 'success');
+                } else {
+                    document.getElementById('videosResult').textContent = `❌ 失败: ${data.message}`;
+                    log(`视频筛选测试失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('videosResult').textContent = `❌ 错误: ${error.message}`;
+                log(`视频筛选测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuth() {
+            try {
+                log('测试权限验证...', 'info');
+                
+                // 测试无token访问
+                const originalToken = adminToken;
+                adminToken = null;
+                const data1 = await apiRequest('/dashboard');
+                adminToken = originalToken;
+                
+                // 测试无效token访问
+                adminToken = 'invalid_token';
+                const data2 = await apiRequest('/dashboard');
+                adminToken = originalToken;
+                
+                const result = `✅ 权限验证测试:
+无Token访问: ${data1.success ? '❌ 应该被拒绝' : '✅ 正确拒绝'}
+无效Token访问: ${data2.success ? '❌ 应该被拒绝' : '✅ 正确拒绝'}`;
+                
+                document.getElementById('authResult').textContent = result;
+                log('权限验证测试完成', 'success');
+            } catch (error) {
+                document.getElementById('authResult').textContent = `❌ 错误: ${error.message}`;
+                log(`权限验证测试错误: ${error.message}`, 'error');
+            }
+        }
+        
+        function openAdminLogin() {
+            window.open('/admin-login.html', '_blank');
+        }
+        
+        function openAdminPanel() {
+            window.open('/admin.html', '_blank');
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('后台管理系统功能测试页面已加载', 'success');
+            log('请先测试管理员登录，然后进行其他功能测试', 'info');
+        });
+    </script>
+</body>
+</html> 
