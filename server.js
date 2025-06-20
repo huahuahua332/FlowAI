@@ -219,6 +219,15 @@ app.get('/admin-test.html', (req, res) => {
 
 
 
+// 简单状态检查
+app.get('/api/status', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // 健康检查
 app.get('/health', async (req, res) => {
   try {
@@ -239,85 +248,6 @@ app.get('/health', async (req, res) => {
       success: false,
       message: '健康检查失败',
       error: error.message
-    });
-  }
-});
-
-// API 状态检查
-app.get('/api/status', async (req, res) => {
-  try {
-    const dbHealth = await healthCheck();
-    const connectionStatus = getConnectionStatus();
-    
-    // 检查各个服务模块状态
-    const status = {
-      success: true,
-      message: 'API 服务正常',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      services: {
-        database: {
-          status: dbHealth.connected ? 'healthy' : 'unhealthy',
-          connection: connectionStatus,
-          mode: isDemoMode ? 'demo' : 'production'
-        },
-        authentication: {
-          status: 'healthy',
-          provider: 'Google OAuth 2.0'
-        },
-        videoGeneration: {
-          status: 'healthy',
-          models: ['veo-3', 'wan-i2v', 'wan-t2v'],
-          provider: 'Replicate'
-        },
-        payment: {
-          status: 'healthy',
-          provider: 'Creem'
-        },
-        notifications: {
-          status: process.env.ENABLE_NOTIFICATIONS === 'true' ? 'enabled' : 'disabled',
-          email: process.env.SMTP_HOST ? 'configured' : 'not configured',
-          webhook: process.env.WEBHOOK_SECRET ? 'configured' : 'not configured'
-        },
-        contentModeration: {
-          status: process.env.ENABLE_CONTENT_MODERATION === 'true' ? 'enabled' : 'disabled',
-          providers: ['OpenAI Moderation', 'Azure Content Safety']
-        },
-        adminPanel: {
-          status: process.env.ENABLE_ADMIN_PANEL === 'true' ? 'enabled' : 'disabled'
-        },
-        i18n: {
-          status: 'enabled',
-          languages: ['zh', 'en', 'ja', 'ko']
-        }
-      },
-      features: {
-        autoRefund: process.env.ENABLE_AUTO_REFUND !== 'false',
-        timeoutDetection: true,
-        autoRetry: true,
-        signedUrls: process.env.ENABLE_SIGNED_URLS === 'true',
-        rateLimiting: process.env.ENABLE_RATE_LIMITING === 'true',
-        deviceTracking: true
-      },
-      endpoints: {
-        auth: '/api/auth',
-        generate: '/api/generate',
-        user: '/api/user',
-        payment: '/api/payment',
-        prompt: '/api/prompt',
-        admin: '/api/admin',
-        health: '/health',
-        status: '/api/status'
-      }
-    };
-    
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'API 状态检查失败',
-      error: error.message,
-      timestamp: new Date().toISOString()
     });
   }
 });
@@ -350,6 +280,7 @@ app.get('/', (req, res) => {
       user: '/api/user',
       payment: '/api/payment',
       prompt: '/api/prompt',
+      status: '/api/status',
       health: '/health'
     },
     connection: connectionStatus
